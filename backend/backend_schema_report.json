@@ -1,0 +1,101 @@
+{
+  "database_url": "sqlite:///./trades.db",
+  "database_path": "./trades.db",
+  "trade_indexes": [
+    [
+      0,
+      "ix_trades_ticket",
+      0,
+      "c",
+      0
+    ],
+    [
+      1,
+      "idx_trade_user_account_ticket",
+      1,
+      "c",
+      0
+    ],
+    [
+      2,
+      "idx_trade_user_account",
+      0,
+      "c",
+      0
+    ],
+    [
+      3,
+      "ix_trades_account_id",
+      0,
+      "c",
+      0
+    ],
+    [
+      4,
+      "ix_trades_user_id",
+      0,
+      "c",
+      0
+    ],
+    [
+      5,
+      "ix_trades_time",
+      0,
+      "c",
+      0
+    ],
+    [
+      6,
+      "ix_trades_id",
+      0,
+      "c",
+      0
+    ],
+    [
+      7,
+      "ix_trades_symbol",
+      0,
+      "c",
+      0
+    ],
+    [
+      8,
+      "idx_trade_time",
+      0,
+      "c",
+      0
+    ]
+  ],
+  "trade_table_sql": [
+    "CREATE TABLE trades (\n\tid INTEGER NOT NULL, \n\tsymbol VARCHAR, \n\tprofit FLOAT, \n\tvolume FLOAT, \n\tentry_price FLOAT, \n\texit_price FLOAT, \n\topen_time DATETIME, \n\tclose_time DATETIME, \n\tduration INTEGER, \n\tstrategy VARCHAR, \n\tnotes VARCHAR, \n\temotion VARCHAR, \n\tticket BIGINT, \n\ttrade_type VARCHAR, \n\ttime DATETIME, user_id INTEGER, account_id VARCHAR, account_name VARCHAR, \n\tPRIMARY KEY (id)\n)"
+  ],
+  "index_sql": {
+    "ix_trades_ticket": [
+      "CREATE INDEX ix_trades_ticket ON trades (ticket)"
+    ],
+    "idx_trade_user_account_ticket": [
+      "CREATE UNIQUE INDEX idx_trade_user_account_ticket ON trades (user_id, COALESCE(account_id, ''), ticket)"
+    ],
+    "idx_trade_user_account": [
+      "CREATE INDEX idx_trade_user_account ON trades (user_id, account_id)"
+    ],
+    "ix_trades_account_id": [
+      "CREATE INDEX ix_trades_account_id ON trades (account_id)"
+    ],
+    "ix_trades_user_id": [
+      "CREATE INDEX ix_trades_user_id ON trades (user_id)"
+    ],
+    "ix_trades_time": [
+      "CREATE INDEX ix_trades_time ON trades (time)"
+    ],
+    "ix_trades_id": [
+      "CREATE INDEX ix_trades_id ON trades (id)"
+    ],
+    "ix_trades_symbol": [
+      "CREATE INDEX ix_trades_symbol ON trades (symbol)"
+    ],
+    "idx_trade_time": [
+      "CREATE INDEX idx_trade_time ON trades (time)"
+    ]
+  }
+}

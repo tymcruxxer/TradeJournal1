@@ -1,0 +1,20 @@
+{
+  "backend_url": "http://127.0.0.1:8000",
+  "api_key": "",
+  "account_id": "",
+  "account_name": "",
+  "quick_sync_interval_seconds": 300,
+  "quick_sync_days": 7,
+  "deep_sync_interval_hours": 12,
+  "deep_sync_days": 730,
+  "request_timeout_seconds": 30,
+  "state_file": "sync_state.json",
+  "lock_file": "sync_agent.lock",
+  "log_file": "sync_agent.log",
+  "log_level": "INFO",
+  "startup_task_name": "TradeJournal MT5 Sync Agent",
+  "mt5_process_names": [
+    "terminal64.exe",
+    "terminal.exe"
+  ]
+}

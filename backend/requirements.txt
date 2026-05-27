@@ -1,0 +1,21 @@
+# ── Trading Journal Backend ──────────────────────────────────────────────────
+# Install:  pip install -r requirements.txt
+
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10          # PostgreSQL adapter (optional — unused with SQLite)
+
+# Auth
+bcrypt==4.2.1
+python-dotenv==1.0.1
+
+# MT5 (only works on Windows with MetaTrader 5 installed)
+# MetaTrader5 is optional; the sync endpoints handle its absence gracefully.
+# MetaTrader5==5.0.45
+
+# Utilities
+pydantic==2.10.3

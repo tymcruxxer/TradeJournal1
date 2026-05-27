@@ -1,0 +1,11 @@
+# TradeJournal MT5 Sync Agent Dependencies
+# Install with: pip install -r requirements.txt
+# For packaging, also install: pip install PyInstaller
+
+# Core functionality
+MetaTrader5>=5.0.0
+numpy>=1.26.0
+psutil>=5.9.0
+
+# For packaging (optional, only needed for build.bat)
+PyInstaller>=5.0.0

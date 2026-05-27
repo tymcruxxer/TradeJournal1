@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Validate desktop agent",
+			"type": "shell",
+			"command": "c:/python313/python.exe",
+			"args": [
+				"desktop/_validate_desktop.py"
+			],
+			"isBackground": false
+		}
+	]
+}
