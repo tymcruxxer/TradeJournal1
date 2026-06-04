@@ -18,24 +18,35 @@ export function SyncStatusBar() {
 
   useEffect(() => {
     void checkBackend();
-    const interval = window.setInterval(checkBackend, 10000);
+    // Increased interval to 30000ms (30 seconds) to ease server load on the free tier
+    const interval = window.setInterval(checkBackend, 30000);
 
     return () => window.clearInterval(interval);
   }, [checkBackend]);
 
   const formatLastSync = () => {
-    if (!syncStatus.lastSync) return "Not synced yet";
+    if (!syncStatus || !syncStatus.lastSync) return "Not synced yet";
 
-    const now = new Date();
-    const diff = now.getTime() - syncStatus.lastSync.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    try {
+      // Convert backend raw string timestamp safely into a valid JavaScript Date object
+      const lastSyncDate = new Date(syncStatus.lastSync);
+      
+      // Fallback if the date string is invalid or parsed poorly
+      if (isNaN(lastSyncDate.getTime())) return "Not synced yet";
 
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+      const now = new Date();
+      const diff = now.getTime() - lastSyncDate.getTime();
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+
+      if (minutes < 1) return "Just now";
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      return `${days}d ago`;
+    } catch {
+      return "Not synced yet";
+    }
   };
 
   return (
