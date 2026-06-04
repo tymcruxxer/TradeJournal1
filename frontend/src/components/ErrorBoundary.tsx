@@ -59,7 +59,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 </Button>
                 <Button
                   variant="secondary"
-                  onClick={() => window.location.reload()}
+                  //onClick={() => window.location.reload()}
                 >
                   Hard Reload Page
                 </Button>
