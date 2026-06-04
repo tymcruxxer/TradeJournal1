@@ -26,6 +26,11 @@ export default class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, errorLog: "" });
   };
 
+  handleHardReload = () => {
+    // This will ONLY run if you manually click the button yourself
+    window.location.reload();
+  };
+
   render() {
     if (!this.state.hasError) {
       return this.props.children;
@@ -59,7 +64,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 </Button>
                 <Button
                   variant="secondary"
-                  //onClick={() => window.location.reload()}
+                  onClick={this.handleHardReload}
                 >
                   Hard Reload Page
                 </Button>
