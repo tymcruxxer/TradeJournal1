@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, getApiErrorMessage, getDesktopAgentDownloadUrl } from "./api";
 import { useWorkspace } from "./context/WorkspaceContext";
 import type { Trade } from "./types";
@@ -79,7 +79,7 @@ export default function DashboardPage({
     labelStyle: { color: "#94a3b8" },
   };
 
-  const loadTrades = async () => {
+  const loadTrades = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -97,7 +97,7 @@ export default function DashboardPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [periodDays, selectedAccount]);
 
   const syncTrades = async () => {
     setSyncing(true);
@@ -138,13 +138,17 @@ export default function DashboardPage({
     setSyncStatus({
       activeSyncAccount: selectedAccount || null,
     });
-  }, [selectedAccount]);
+  }, [selectedAccount, setSyncStatus]);
 
   useEffect(() => {
     loadTrades();
-  }, [selectedPeriod, selectedAccount]);
+  }, [loadTrades]);
 
   useEffect(() => {
+    if (!hasAccounts && !hasTrades) {
+      return;
+    }
+
     const settings = getSettings();
     if (!settings.autoSync) return;
 
@@ -168,7 +172,7 @@ export default function DashboardPage({
     }, settings.syncInterval);
 
     return () => clearInterval(interval);
-  }, [selectedAccount, selectedPeriod]);
+  }, [hasAccounts, hasTrades, loadTrades, selectedAccount]);
 
   const filteredTrades = trades.filter((trade) => {
     if (!startDate && !endDate) return true;

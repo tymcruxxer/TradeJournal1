@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from "react";
 
 export type PeriodPreset = "7D" | "30D" | "90D" | "1Y" | "ALL";
 
@@ -72,31 +72,46 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     }
   }, [selectedAccount, selectedPeriod]);
 
-  const setSelectedPeriod = (period: PeriodPreset) => {
+  const setSelectedPeriod = useCallback((period: PeriodPreset) => {
     setSelectedPeriodState(period);
-  };
+  }, []);
 
-  const setSyncStatus = (partial: Partial<SyncStatus>) => {
-    setSyncStatusState((prev) => ({ ...prev, ...partial }));
-  };
+  const setSyncStatus = useCallback((partial: Partial<SyncStatus>) => {
+    setSyncStatusState((prev) => {
+      const next = { ...prev, ...partial };
+      return Object.is(next.lastSync, prev.lastSync) &&
+        next.isSyncing === prev.isSyncing &&
+        next.error === prev.error &&
+        next.agentOnline === prev.agentOnline &&
+        next.activeSyncAccount === prev.activeSyncAccount
+        ? prev
+        : next;
+    });
+  }, []);
 
-  const updateLastSync = () => {
+  const updateLastSync = useCallback(() => {
     setSyncStatusState((prev) => ({ ...prev, lastSync: new Date() }));
-  };
+  }, []);
 
-  const setSyncing = (syncing: boolean) => {
-    setSyncStatusState((prev) => ({ ...prev, isSyncing: syncing }));
-  };
+  const setSyncing = useCallback((syncing: boolean) => {
+    setSyncStatusState((prev) =>
+      prev.isSyncing === syncing ? prev : { ...prev, isSyncing: syncing }
+    );
+  }, []);
 
-  const setSyncError = (error: string | null) => {
-    setSyncStatusState((prev) => ({ ...prev, error }));
-  };
+  const setSyncError = useCallback((error: string | null) => {
+    setSyncStatusState((prev) =>
+      prev.error === error ? prev : { ...prev, error }
+    );
+  }, []);
 
-  const setAgentOnline = (online: boolean) => {
-    setSyncStatusState((prev) => ({ ...prev, agentOnline: online }));
-  };
+  const setAgentOnline = useCallback((online: boolean) => {
+    setSyncStatusState((prev) =>
+      prev.agentOnline === online ? prev : { ...prev, agentOnline: online }
+    );
+  }, []);
 
-  const value: WorkspaceContextType = {
+  const value: WorkspaceContextType = useMemo(() => ({
     selectedAccount,
     setSelectedAccount,
     selectedPeriod,
@@ -107,7 +122,17 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     setSyncing,
     setSyncError,
     setAgentOnline,
-  };
+  }), [
+    selectedAccount,
+    selectedPeriod,
+    syncStatus,
+    setSelectedPeriod,
+    setSyncStatus,
+    updateLastSync,
+    setSyncing,
+    setSyncError,
+    setAgentOnline,
+  ]);
 
   return (
     <WorkspaceContext.Provider value={value}>

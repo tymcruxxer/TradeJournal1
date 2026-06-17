@@ -47,7 +47,11 @@ export default class ErrorBoundary extends Component<Props, State> {
                   TradeJournal is waiting for server response.
                 </h1>
                 <p className="mt-3 text-sm leading-6 text-slate-400">
+<<<<<<< HEAD
                   Your session and trade data are safe. This usually happens if the backend cloud server is taking a moment to wake up from standby.
+=======
+                  Your session and trade data are protected. Try recovering the interface without leaving the page.
+>>>>>>> f0273a5 (Fix onboarding refresh loop)
                 </p>
                 {this.state.errorLog && (
                   <p className="mt-2 text-xs font-mono text-amber-300/70 bg-black/30 p-2 rounded max-w-full overflow-x-auto">
@@ -58,6 +62,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <div className="flex flex-wrap justify-center gap-3">
                 <Button
                   variant="primary"
+<<<<<<< HEAD
                   onClick={this.handleReset}
                 >
                   Retry Interface
@@ -67,6 +72,13 @@ export default class ErrorBoundary extends Component<Props, State> {
                   onClick={this.handleHardReload}
                 >
                   Hard Reload Page
+=======
+                  onClick={() => {
+                    this.setState({ hasError: false });
+                  }}
+                >
+                  Try again
+>>>>>>> f0273a5 (Fix onboarding refresh loop)
                 </Button>
               </div>
             </div>

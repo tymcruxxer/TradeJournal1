@@ -2402,3 +2402,32 @@ Auth/workspace/sync lifecycle smoke test:
 - Use a clean demo account with either:
   - no data, to show onboarding clearly, or
   - a small seeded MT5 account, to show dashboard/trades/analytics immediately after sync.
+
+---
+
+# URGENT PRODUCTION FIX - Frontend Onboarding Refresh Loop - June 17, 2026
+
+## Root Cause
+
+The deployed frontend appeared to refresh the whole page every few seconds after signup/login because the onboarding account-discovery poll in `frontend/src/App.tsx` ran every 3 seconds and called `loadShellState()`. That function always set `shellLoading=true` before making API calls, so the dashboard onboarding view was repeatedly replaced by the shell loading UI even when the user had no accounts yet.
+
+There was also a hard reload path in `frontend/src/components/ErrorBoundary.tsx` through `window.location.reload()`. It was user-triggered rather than the 3-second loop, but it violated the production requirement that UI/API failures recover inside React instead of reloading the browser.
+
+## Fix
+
+- Added a non-loading background mode to `loadShellState()` for onboarding polling.
+- Added an in-flight guard so workspace polls cannot overlap.
+- Kept the 3-second account-discovery polling behavior, but it no longer toggles the whole shell loading state.
+- Removed `window.location.reload()` from the error boundary recovery button.
+- Memoized workspace context callbacks and context value so health polling dependencies remain stable.
+- Made workspace status setters ignore no-op updates to reduce render churn.
+- Stopped dashboard MT5 autosync from running while the workspace is still in first-run onboarding.
+- Added cleanup for the Settings clipboard-copy timeout.
+
+## Expected Behavior
+
+- Signup/login lands on onboarding and stays visually stable.
+- Backend/API delays show loading or offline UI states, not browser reloads.
+- Health polling updates connection status only.
+- Workspace/account polling continues to discover the first upload without flickering the page.
+- Expired auth still clears the token and returns the user to login via React state.

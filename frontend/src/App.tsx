@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AnalyticsPage from "./AnalyticsPage";
 import AuthPage from "./AuthPage";
 import DashboardPage from "./DashboardPage";
@@ -28,6 +28,7 @@ function AppContent() {
   const [shellError, setShellError] = useState("");
   const [authNotice, setAuthNotice] = useState("");
   const [tradeCount, setTradeCount] = useState(0);
+  const shellPollInFlight = useRef(false);
 
   const logout = () => {
     clearAuthToken();
@@ -39,8 +40,22 @@ function AppContent() {
     setShellError("");
   };
 
-  const loadShellState = async (currentSelectedAccount: string) => {
-    setShellLoading(true);
+  const loadShellState = useCallback(async (
+    currentSelectedAccount: string,
+    options: { showLoading?: boolean } = {}
+  ) => {
+    const { showLoading = true } = options;
+
+    if (shellPollInFlight.current) {
+      return;
+    }
+
+    shellPollInFlight.current = true;
+
+    if (showLoading) {
+      setShellLoading(true);
+    }
+
     setShellError("");
 
     try {
@@ -67,9 +82,13 @@ function AppContent() {
       console.error("Error loading workspace state:", err);
       setShellError(getApiErrorMessage(err, "Unable to load your workspace."));
     } finally {
-      setShellLoading(false);
+      shellPollInFlight.current = false;
+
+      if (showLoading) {
+        setShellLoading(false);
+      }
     }
-  };
+  }, [setSelectedAccount]);
 
   useEffect(() => {
     if (!token) {
@@ -90,7 +109,7 @@ function AppContent() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [loadShellState, selectedAccount, token]);
 
   // Poll for account discovery when in onboarding state (waiting for first upload)
   useEffect(() => {
@@ -99,13 +118,13 @@ function AppContent() {
     }
 
     const interval = setInterval(() => {
-      loadShellState(selectedAccount).catch((err) => {
+      loadShellState(selectedAccount, { showLoading: false }).catch((err) => {
         console.debug("Polling for account discovery, check failed:", err);
       });
     }, 3000); // Poll every 3 seconds during onboarding
 
     return () => clearInterval(interval);
-  }, [token, accounts.length, tradeCount, selectedAccount]);
+  }, [loadShellState, token, accounts.length, tradeCount, selectedAccount]);
 
   useEffect(() => {
     const handleExpiredSession = () => {

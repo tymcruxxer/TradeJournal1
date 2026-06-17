@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, getApiErrorMessage, getDesktopAgentDownloadUrl } from "./api";
 import { getSettings, saveSettings } from "./settings";
 import type { ApiKeyResponse } from "./types";
@@ -15,10 +15,19 @@ export default function SettingsPage({ apiKey, onApiKeyChange }: Props) {
   const [copied, setCopied] = useState(false);
   const [apiKeyError, setApiKeyError] = useState("");
   const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const copiedTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     saveSettings(settings);
   }, [settings]);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current !== null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadApiKey = async () => {
     setApiKeyLoading(true);
@@ -59,7 +68,13 @@ export default function SettingsPage({ apiKey, onApiKeyChange }: Props) {
     try {
       await navigator.clipboard.writeText(apiKey);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      if (copiedTimeoutRef.current !== null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+      copiedTimeoutRef.current = window.setTimeout(() => {
+        setCopied(false);
+        copiedTimeoutRef.current = null;
+      }, 1500);
     } catch {
       setApiKeyError("Clipboard copy is unavailable in this browser.");
     }
