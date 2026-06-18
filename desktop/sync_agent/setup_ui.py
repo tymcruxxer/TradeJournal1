@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 from tkinter import BooleanVar, StringVar, Tk
 from tkinter import messagebox, ttk
@@ -8,8 +12,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .branding import WINDOW_TITLE, runtime_icon_path
-from .config import AgentConfig, config_requires_setup, load_config, save_config
-from .startup import install_startup_task
+from .config import AgentConfig, _get_app_home, config_requires_setup, load_config, save_config
+from .startup import build_agent_command, install_startup_task
 
 
 def run_setup_wizard(config_path: Path, initial_message: str | None = None) -> bool:
@@ -263,10 +267,12 @@ class SetupWizard:
             else:
                 startup_message = "Startup scheduling was enabled successfully."
 
+        launch_message = _restart_background_agent(next_config, self.config_path)
+
         self.completed = True
         messagebox.showinfo(
             WINDOW_TITLE,
-            f"Setup complete. TradeJournal Sync Agent will now continue quietly in the background.\n\n{startup_message}",
+            f"Setup complete. TradeJournal Sync Agent will now continue quietly in the background.\n\n{startup_message}\n{launch_message}",
         )
         self.root.destroy()
 
@@ -311,3 +317,78 @@ def _health_check(backend_url: str) -> tuple[bool, str]:
         return False, f"Backend responded with HTTP {response.status} while checking {url}."
 
     return True, f"Connected to TradeJournal backend successfully at {url}."
+
+
+def _restart_background_agent(config: AgentConfig, config_path: Path) -> str:
+    stopped = _stop_existing_packaged_agent(config, config_path)
+
+    try:
+        command = build_agent_command(config_path, background=True)
+        kwargs: dict = {
+            "stdout": subprocess.DEVNULL,
+            "stderr": subprocess.DEVNULL,
+            "stdin": subprocess.DEVNULL,
+            "close_fds": True,
+        }
+
+        if os.name == "nt":
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+        subprocess.Popen(command, **kwargs)
+    except Exception as exc:
+        return f"Background launch could not be started automatically: {exc}"
+
+    if stopped:
+        return "Existing background agent was restarted with the new configuration."
+
+    return "Background agent was started with the saved configuration."
+
+
+def _stop_existing_packaged_agent(config: AgentConfig, config_path: Path) -> bool:
+    if not getattr(sys, "frozen", False):
+        return False
+
+    lock_path = _resolve_runtime_file(config.lock_file, config_path)
+    if not lock_path.exists():
+        return False
+
+    try:
+        pid = int(lock_path.read_text(encoding="utf-8").strip())
+    except Exception:
+        return False
+
+    if pid <= 0 or pid == os.getpid():
+        return False
+
+    try:
+        import psutil
+
+        process = psutil.Process(pid)
+        name = (process.name() or "").lower()
+        exe = (process.exe() or "").lower()
+
+        if "tradejournal-sync-agent" not in name and "tradejournal-sync-agent" not in exe:
+            return False
+
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except psutil.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+
+        time.sleep(0.5)
+        return True
+    except Exception:
+        return False
+
+
+def _resolve_runtime_file(filename: str, config_path: Path) -> Path:
+    path = Path(filename)
+    if path.is_absolute():
+        return path
+
+    if getattr(sys, "frozen", False):
+        return _get_app_home() / path
+
+    return config_path.parent / path

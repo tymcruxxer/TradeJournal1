@@ -2,12 +2,15 @@
 #define AppVersion "1.0.0"
 #define AppPublisher "TradeJournal"
 #define AppExeName "TradeJournal-Sync-Agent.exe"
+#define AppSetupName "TradeJournal-Setup"
 
 [Setup]
 AppId={{6F24D54C-E84B-4503-82E0-16A47E4F1447}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
+AppPublisherURL=https://tradejournal11.onrender.com
+AppSupportURL=https://tradejournal11.onrender.com
 DefaultDirName={autopf}\TradeJournal Sync Agent
 DefaultGroupName=TradeJournal
 DisableProgramGroupPage=yes
@@ -15,9 +18,11 @@ WizardStyle=modern
 Compression=lzma
 SolidCompression=yes
 OutputDir=installer
-OutputBaseFilename=TradeJournal-Sync-Agent-Installer
+OutputBaseFilename={#AppSetupName}
 SetupIconFile=assets\tradejournal.ico
 UninstallDisplayIcon={app}\{#AppExeName}
+UninstallDisplayName={#AppName}
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked

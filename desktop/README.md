@@ -32,7 +32,7 @@ python main.py --startup-status
 python main.py --uninstall-startup
 ```
 
-## Building Packaged .exe (Distribution)
+## Building the Windows Installer (Distribution)
 
 ### Prerequisites
 - Python 3.8+ installed and in PATH
@@ -51,9 +51,15 @@ cd desktop
 build.bat
 ```
 
-Output will be in `dist/TradeJournal-Sync-Agent.exe`
+Production output will be in `installer/TradeJournal-Setup.exe`.
 
-If Inno Setup 6 is installed, `build.bat` will also create a branded Windows installer in `installer/`.
+This installer is the file that should be hosted by the web app download route.
+Do not distribute `dist/TradeJournal-Sync-Agent.exe` directly to clients; it is the
+background agent payload used by the installer.
+
+Inno Setup 6 is required for production packaging. If Inno Setup is missing,
+`build.bat` exits with an error unless `--exe-only` is provided for local
+development testing.
 
 **Options:**
 - `build.bat` — Build the executable

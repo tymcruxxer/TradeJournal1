@@ -2431,3 +2431,100 @@ There was also a hard reload path in `frontend/src/components/ErrorBoundary.tsx`
 - Health polling updates connection status only.
 - Workspace/account polling continues to discover the first upload without flickering the page.
 - Expired auth still clears the token and returns the user to login via React state.
+
+---
+
+# URGENT PRODUCTION FIX - Windows Installer Download Flow - June 18, 2026
+
+## Root Cause
+
+The web app was serving the raw PyInstaller background agent executable from:
+
+- `desktop/dist/TradeJournal-Sync-Agent.exe`
+
+through the backend route:
+
+- `GET /downloads/desktop-sync-agent/windows`
+
+That made the client download and double-click the background agent directly. If configuration was missing or the setup window did not surface clearly, the process could appear as a silent Task Manager entry. It also did not create an Installed Apps entry, Start Menu shortcut, uninstall record, or normal installer experience.
+
+The Inno Setup installer script existed, but no installer artifact was present locally and the backend route still pointed at the raw executable.
+
+## Installer Architecture
+
+Production distribution now treats the Inno Setup installer as the only correct client download artifact:
+
+- Installer artifact: `desktop/installer/TradeJournal-Setup.exe`
+- Background payload: `desktop/dist/TradeJournal-Sync-Agent.exe`
+
+The raw executable remains a development/build payload only. It should not be linked from the hosted frontend for clients.
+
+The installer script:
+
+- installs the app into a real Program Files app directory
+- uses TradeJournal branding/icon
+- creates uninstall metadata for Windows Installed Apps
+- creates Start Menu shortcuts
+- optionally creates a desktop shortcut
+- launches `{app}\TradeJournal-Sync-Agent.exe --setup` after install
+
+## Download Endpoint Behavior
+
+`backend/app/main.py` now serves:
+
+- default path: `desktop/installer/TradeJournal-Setup.exe`
+- download filename: `TradeJournal-Setup.exe`
+
+If the installer is missing, the endpoint returns 404 instead of falling back to the raw background executable.
+
+`DESKTOP_AGENT_DOWNLOAD_PATH` can still override the hosted installer location, but it must point to the installer, not the raw agent exe.
+
+## Setup and Background Launch Behavior
+
+Desktop setup behavior was tightened:
+
+- `--setup` is marked as a completed setup flow after the wizard closes, so the setup process does not fall through into the background loop.
+- setup still opens before the single-instance background lock is acquired.
+- missing packaged config still opens setup UI.
+- setup saves config to AppData using the existing JSON format.
+- setup registers the existing Windows startup task when selected.
+- setup starts the normal silent background agent after saving.
+- when a packaged background agent is already identifiable through the lock PID, setup attempts to stop and restart it with the new configuration.
+
+Preserved:
+
+- API-key auth
+- AppData config/log/state locations
+- upload endpoint
+- MT5 sync logic
+- locking behavior
+- scheduled-task startup architecture
+- windowed PyInstaller agent behavior
+
+## Validation Results
+
+Completed locally:
+
+- `python -m compileall desktop/sync_agent backend/app` passed.
+- `desktop/build.bat --exe-only` rebuilt `desktop/dist/TradeJournal-Sync-Agent.exe` with the updated setup code.
+- Inno Setup 6 (`ISCC.exe`) is not installed on this machine, so `TradeJournal-Setup.exe` could not be compiled locally.
+- `build.bat` now handles the missing Inno Setup case cleanly:
+  - normal production build requires Inno Setup
+  - `--exe-only` is available only for development raw-exe builds
+- Confirmed the backend route now points to `desktop/installer/TradeJournal-Setup.exe`.
+
+Not completed locally because they require an interactive Windows installer run and Inno Setup:
+
+- compile `desktop/installer/TradeJournal-Setup.exe`
+- run the installer UI
+- confirm Windows Installed Apps entry
+- confirm Start Menu/Desktop shortcuts
+- verify post-install setup window visually
+- verify live MT5 upload to Render and dashboard onboarding exit
+
+## Remaining Desktop Risks
+
+- A Windows build machine with Inno Setup 6 is required to produce the production installer artifact.
+- The installer must be uploaded/deployed wherever `DESKTOP_AGENT_DOWNLOAD_PATH` points in production.
+- Full client-style validation still needs a real Windows/MT5 machine with the final hosted backend URL.
+- Code signing is not yet implemented, so Windows SmartScreen warnings may still appear for first-client distribution.

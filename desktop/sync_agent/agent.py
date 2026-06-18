@@ -255,8 +255,10 @@ def _load_runtime_config(
     """
     setup_was_completed = False
 
-    if force_setup and not _open_setup_wizard(config_path):
-        raise SystemExit(1)
+    if force_setup:
+        if not _open_setup_wizard(config_path):
+            raise SystemExit(1)
+        setup_was_completed = True
 
     try:
         config = load_config(config_path)
@@ -380,48 +382,6 @@ def main() -> None:
     if setup_was_completed and not args.once and _is_packaged():
         LOGGER.info("Setup completed successfully. Agent will launch in the background via Windows startup task.")
         return
-
-    agent = SyncAgent(config, config_path)
-
-    lock = SingleInstanceLock(agent.lock_path)
-
-    if not lock.acquire():
-        LOGGER.warning("Another sync agent instance is already running; exiting")
-        if _is_packaged() and not args.once:
-            _show_dialog("info", "TradeJournal Sync Agent is already running in the background.")
-        return
-
-    try:
-        if args.once:
-            try:
-                result = agent.sync_once()
-            except Exception as exc:
-                LOGGER.error("One-shot sync failed: %s", exc)
-                if _is_packaged():
-                    _show_dialog("error", f"TradeJournal Sync Agent could not complete a sync.\n\n{exc}")
-                raise SystemExit(1) from exc
-
-            LOGGER.info("One-shot sync result: %s", result)
-            return
-
-        agent.run_forever()
-    finally:
-        lock.release()
-
-    if args.install_startup:
-        result = install_startup_task(config, config_path)
-        _log_task_result(
-            "Install startup task",
-            result.returncode,
-            result.stdout,
-            result.stderr,
-        )
-        if _is_packaged():
-            _show_dialog(
-                "info" if result.returncode == 0 else "error",
-                result.stdout.strip() or result.stderr.strip() or "Startup task command completed.",
-            )
-        raise SystemExit(result.returncode)
 
     agent = SyncAgent(config, config_path)
 

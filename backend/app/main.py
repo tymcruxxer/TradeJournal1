@@ -52,17 +52,17 @@ def root():
 
 @app.get("/downloads/desktop-sync-agent/windows")
 def download_desktop_sync_agent():
-    default_path = Path(__file__).resolve().parents[2] / "desktop" / "dist" / "TradeJournal-Sync-Agent.exe"
-    agent_path = Path(os.getenv("DESKTOP_AGENT_DOWNLOAD_PATH", default_path)).resolve()
+    default_path = Path(__file__).resolve().parents[2] / "desktop" / "installer" / "TradeJournal-Setup.exe"
+    installer_path = Path(os.getenv("DESKTOP_AGENT_DOWNLOAD_PATH", default_path)).resolve()
 
-    if not agent_path.exists() or not agent_path.is_file():
+    if not installer_path.exists() or not installer_path.is_file():
         raise HTTPException(
             status_code=404,
-            detail="Desktop sync agent package is not available on this server.",
+            detail="Desktop sync agent installer is not available on this server.",
         )
 
     return FileResponse(
-        path=agent_path,
-        filename="TradeJournal-Sync-Agent.exe",
+        path=installer_path,
+        filename="TradeJournal-Setup.exe",
         media_type="application/vnd.microsoft.portable-executable",
     )
