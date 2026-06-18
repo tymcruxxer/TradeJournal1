@@ -105,26 +105,26 @@ if exist "%OUTPUT_DIR%\TradeJournal-Sync-Agent.exe" (
     echo.
     echo Executable: %OUTPUT_DIR%\TradeJournal-Sync-Agent.exe
     echo.
-    set ISCC_PATH=
-    where /q ISCC.exe
-    if not errorlevel 1 set "ISCC_PATH=ISCC.exe"
-    if not defined ISCC_PATH if exist "!INNO_X86!" set "ISCC_PATH=!INNO_X86!"
-    if not defined ISCC_PATH if exist "!INNO_X64!" set "ISCC_PATH=!INNO_X64!"
-
-    if defined ISCC_PATH (
-        echo [INFO] Building installer package...
-        "%ISCC_PATH%" tradejournal_installer.iss
-        if errorlevel 1 (
-            echo [ERROR] Inno Setup installer build failed. The raw executable was created, but production download requires the installer.
-            exit /b 1
-        ) else (
-            echo [SUCCESS] Installer created in %INSTALLER_DIR%
-            echo Installer: %INSTALLER_DIR%\TradeJournal-Setup.exe
-        )
+    if "%EXE_ONLY%"=="1" (
+        echo [WARNING] Skipping installer build because --exe-only was provided.
         echo.
     ) else (
-        if "%EXE_ONLY%"=="1" (
-            echo [WARNING] Inno Setup was not found. Built raw executable only because --exe-only was provided.
+        set ISCC_PATH=
+        where /q ISCC.exe
+        if not errorlevel 1 set "ISCC_PATH=ISCC.exe"
+        if not defined ISCC_PATH if exist "!INNO_X86!" set "ISCC_PATH=!INNO_X86!"
+        if not defined ISCC_PATH if exist "!INNO_X64!" set "ISCC_PATH=!INNO_X64!"
+
+        if defined ISCC_PATH (
+            echo [INFO] Building installer package...
+            "%ISCC_PATH%" tradejournal_installer.iss
+            if errorlevel 1 (
+                echo [ERROR] Inno Setup installer build failed. The raw executable was created, but production download requires the installer.
+                exit /b 1
+            ) else (
+                echo [SUCCESS] Installer created in %INSTALLER_DIR%
+                echo Installer: %INSTALLER_DIR%\TradeJournal-Setup.exe
+            )
             echo.
         ) else (
             echo [ERROR] Inno Setup was not found. Production download requires TradeJournal-Setup.exe.

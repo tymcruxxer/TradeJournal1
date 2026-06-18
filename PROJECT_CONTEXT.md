@@ -2411,14 +2411,14 @@ Auth/workspace/sync lifecycle smoke test:
 
 The deployed frontend appeared to refresh the whole page every few seconds after signup/login because the onboarding account-discovery poll in `frontend/src/App.tsx` ran every 3 seconds and called `loadShellState()`. That function always set `shellLoading=true` before making API calls, so the dashboard onboarding view was repeatedly replaced by the shell loading UI even when the user had no accounts yet.
 
-There was also a hard reload path in `frontend/src/components/ErrorBoundary.tsx` through `window.location.reload()`. It was user-triggered rather than the 3-second loop, but it violated the production requirement that UI/API failures recover inside React instead of reloading the browser.
+There was also a hard reload path in `frontend/src/components/ErrorBoundary.tsx` through the browser reload API. It was user-triggered rather than the 3-second loop, but it violated the production requirement that UI/API failures recover inside React instead of reloading the browser.
 
 ## Fix
 
 - Added a non-loading background mode to `loadShellState()` for onboarding polling.
 - Added an in-flight guard so workspace polls cannot overlap.
 - Kept the 3-second account-discovery polling behavior, but it no longer toggles the whole shell loading state.
-- Removed `window.location.reload()` from the error boundary recovery button.
+- Removed the browser reload call from the error boundary recovery button.
 - Memoized workspace context callbacks and context value so health polling dependencies remain stable.
 - Made workspace status setters ignore no-op updates to reduce render churn.
 - Stopped dashboard MT5 autosync from running while the workspace is still in first-run onboarding.
@@ -2528,3 +2528,141 @@ Not completed locally because they require an interactive Windows installer run 
 - The installer must be uploaded/deployed wherever `DESKTOP_AGENT_DOWNLOAD_PATH` points in production.
 - Full client-style validation still needs a real Windows/MT5 machine with the final hosted backend URL.
 - Code signing is not yet implemented, so Windows SmartScreen warnings may still appear for first-client distribution.
+
+---
+
+# PRODUCTION DESKTOP AGENT STABILIZATION PASS - June 18, 2026
+
+## Backend URL Correction
+
+The only valid production backend is now documented and configured as:
+
+- `https://tradejournal1.onrender.com`
+
+Updated:
+
+- frontend production fallback API URL
+- desktop agent default backend URL
+- desktop checked-in config/example config
+- Inno Setup publisher/support URLs
+- deployment documentation references that had the incorrect old Render host value
+
+Localhost references remain only for explicit local development auto-detection or development examples.
+
+## Status Window Fix
+
+Root cause of corrupted status text:
+
+- `desktop/sync_agent/status_window.py` rendered labels and values on overlapping Tk grid rows.
+- The state reader also referenced the wrong sync-state field name.
+
+Fix:
+
+- Rebuilt the status window as a two-column label/value layout.
+- Labels and values are now rendered separately with spacing.
+- Status values use colored status dots.
+- Fixed last-sync reading to use `SyncState.last_deep_sync_at`.
+- Added live backend health check in the status window.
+- Added MT5 account display fields:
+  - Broker
+  - Login
+  - Server
+  - Active Account
+
+Expected status output now includes:
+
+- MT5 Detection: Connected / helpful disconnected message
+- Backend Connection: Connected / Offline
+- Backend URL: `https://tradejournal1.onrender.com`
+- Last Sync: Never / timestamp
+- Active Account: account name/login or Not Selected
+- Instance Lock: Active / Available
+- Status: Running in Background / Setup Complete / Setup Incomplete
+
+## MT5 Account Detection
+
+Added `get_account_info()` to `desktop/sync_agent/mt5_reader.py`.
+
+It reports:
+
+- MT5 package availability
+- connection status
+- login number
+- broker/company
+- server
+- account name
+- helpful messages when MT5 is closed or no account is signed in
+
+## Desktop Heartbeat and Onboarding Completion
+
+Added a minimal desktop-agent heartbeat path:
+
+- `POST /api/trades/agent-heartbeat` authenticated by `X-API-Key`
+- `GET /api/trades/agent-status` authenticated by web JWT
+
+Stored on the user row:
+
+- last agent seen time
+- current account id/name
+- broker
+- server
+- agent status
+
+Frontend workspace bootstrap now reads agent status. Onboarding exits when the workspace has an API key and either:
+
+- the desktop agent recently checked in, or
+- an account exists, or
+- trades exist
+
+The existing account/trade discovery polling remains unchanged.
+
+## Installer Experience
+
+Inno Setup script wording was improved:
+
+- branded welcome text
+- clearer installed-complete text
+- post-install setup launch remains `{app}\TradeJournal-Sync-Agent.exe --setup`
+
+No command-prompt behavior was introduced; PyInstaller remains `console=False`.
+
+## Validation Results
+
+Passed locally:
+
+- `python -m compileall backend/app desktop/sync_agent`
+- `npm.cmd run build`
+- `cmd.exe /c desktop\build.bat --exe-only`
+- production health check returned:
+  - `{"status":"ok","version":"1.0.0","database":"postgresql"}`
+- bad URL scan found no remaining incorrect old Render host references outside generated build output.
+- frontend source/dist scan found no hard reload calls.
+
+Not completed locally:
+
+- Inno Setup installer compilation, because the local packaging environment still lacks a working Inno compiler path for production packaging.
+- interactive installer run
+- real MT5 login/account detection test
+- real Render upload from MT5
+
+## Remaining Blocker: Frontend-Driven Account Switching
+
+The requested "Switch Account" flow is not production-safe in the current architecture yet.
+
+Reason:
+
+- The hosted frontend cannot directly command a local Windows agent unless the agent exposes a secure local control surface or polls backend commands.
+- Secure local storage of MT5 passwords needs a Windows credential-store design, not plaintext JSON.
+- Backend command queue, local agent command polling, credential encryption, and UI authorization should be designed as a dedicated feature.
+
+Safe current behavior:
+
+- agent syncs the currently active MT5 account
+- account metadata is detected from the active MT5 terminal
+- uploaded trades remain account-aware
+
+Recommended first-client scope:
+
+- require the trader to switch accounts inside MT5
+- agent syncs the active signed-in MT5 account
+- defer hosted-dashboard account switching until secure local command architecture is implemented

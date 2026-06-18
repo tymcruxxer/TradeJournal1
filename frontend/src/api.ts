@@ -5,9 +5,10 @@ import type { AuthUser } from "./types";
 
 const TOKEN_STORAGE_KEY = "trading_journal_token";
 const USER_STORAGE_KEY = "trading_journal_user";
+export const PRODUCTION_API_URL = "https://tradejournal1.onrender.com";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000",
+  baseURL: import.meta.env.VITE_API_URL || PRODUCTION_API_URL,
   timeout: 20000,
 });
 

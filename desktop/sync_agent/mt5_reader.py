@@ -61,6 +61,56 @@ def fetch_closed_trades(days: int) -> list[dict[str, Any]]:
         mt5.shutdown()
 
 
+def get_account_info() -> dict[str, Any]:
+    if not MT5_AVAILABLE:
+        detail = str(MT5_IMPORT_ERROR) if MT5_IMPORT_ERROR else "MetaTrader5 package is not installed"
+        return {
+            "mt5_available": False,
+            "connected": False,
+            "message": detail,
+            "login": None,
+            "broker": None,
+            "server": None,
+            "name": None,
+        }
+
+    if not mt5.initialize():
+        return {
+            "mt5_available": True,
+            "connected": False,
+            "message": "MT5 is installed but not connected. Open MetaTrader 5 and sign in.",
+            "login": None,
+            "broker": None,
+            "server": None,
+            "name": None,
+        }
+
+    try:
+        account = mt5.account_info()
+        if not account:
+            return {
+                "mt5_available": True,
+                "connected": False,
+                "message": "MT5 is open, but no trading account is signed in.",
+                "login": None,
+                "broker": None,
+                "server": None,
+                "name": None,
+            }
+
+        return {
+            "mt5_available": True,
+            "connected": True,
+            "message": "Connected",
+            "login": str(getattr(account, "login", "")) or None,
+            "broker": getattr(account, "company", None),
+            "server": getattr(account, "server", None),
+            "name": getattr(account, "name", None),
+        }
+    finally:
+        mt5.shutdown()
+
+
 def _position_to_trade(deals: list[Any]) -> dict[str, Any]:
     sorted_deals = sorted(deals, key=lambda deal: deal.time)
     entry = sorted_deals[0]

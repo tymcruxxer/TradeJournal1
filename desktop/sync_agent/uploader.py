@@ -48,3 +48,33 @@ def upload_trades(config: AgentConfig, trades: list[dict]) -> dict:
         raise RuntimeError("Upload failed after retry attempts")
 
     return json.loads(response_body) if response_body else {}
+
+
+def send_heartbeat(config: AgentConfig, account_info: dict | None = None, status: str = "online") -> dict:
+    if not config.api_key or config.api_key == "PASTE_API_KEY_HERE":
+        raise RuntimeError("Missing API key in agent config")
+
+    account_info = account_info or {}
+    payload = {
+        "account_id": account_info.get("login") or account_info.get("account_id") or config.account_id,
+        "account_name": account_info.get("name") or account_info.get("account_name") or config.account_name,
+        "broker": account_info.get("broker"),
+        "server": account_info.get("server"),
+        "mt5_connected": bool(account_info.get("connected")),
+        "status": status,
+    }
+
+    request = Request(
+        f"{config.backend_url.rstrip('/')}/api/trades/agent-heartbeat",
+        data=json.dumps(payload).encode("utf-8"),
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "X-API-Key": config.api_key,
+        },
+    )
+
+    with urlopen(request, timeout=config.request_timeout_seconds) as response:
+        response_body = response.read().decode("utf-8")
+
+    return json.loads(response_body) if response_body else {}

@@ -61,6 +61,22 @@ def ensure_auth_schema():
                     text("ALTER TABLE users ADD COLUMN api_key VARCHAR")
                 )
 
+        agent_columns = {
+            "agent_last_seen_at": "TIMESTAMP",
+            "agent_account_id": "VARCHAR",
+            "agent_account_name": "VARCHAR",
+            "agent_broker": "VARCHAR",
+            "agent_server": "VARCHAR",
+            "agent_status": "VARCHAR",
+        }
+
+        for column_name, column_type in agent_columns.items():
+            if column_name not in user_columns:
+                with engine.begin() as connection:
+                    connection.execute(
+                        text(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}")
+                    )
+
         with engine.begin() as connection:
             connection.execute(
                 text(

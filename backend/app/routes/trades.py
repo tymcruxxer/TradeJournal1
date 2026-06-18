@@ -46,6 +46,13 @@ def _normalized_account_id(account_id: str | None) -> str:
     return (account_id or "").strip()
 
 
+def _agent_connected(user: User) -> bool:
+    if not user.agent_last_seen_at:
+        return False
+
+    return user.agent_last_seen_at >= datetime.utcnow() - timedelta(minutes=15)
+
+
 def _trade_identity_query(db: Session, user_id: int, ticket: int, account_id: str | None):
     normalized_account_id = _normalized_account_id(account_id)
     return (
@@ -89,7 +96,58 @@ def get_user_accounts(
                 "account_name": account_name or account_id,
             })
 
+    if current_user.agent_account_id and current_user.agent_account_id not in seen:
+        accounts.append({
+            "account_id": current_user.agent_account_id,
+            "account_name": current_user.agent_account_name or current_user.agent_account_id,
+        })
+
     return sorted(accounts, key=lambda a: a["account_name"] or a["account_id"])
+
+
+@router.get("/agent-status")
+def get_agent_status(
+    current_user: User = Depends(get_current_user),
+):
+    return {
+        "api_key_configured": bool(current_user.api_key),
+        "agent_connected": _agent_connected(current_user),
+        "last_seen_at": current_user.agent_last_seen_at,
+        "account_id": current_user.agent_account_id,
+        "account_name": current_user.agent_account_name,
+        "broker": current_user.agent_broker,
+        "server": current_user.agent_server,
+        "status": current_user.agent_status,
+    }
+
+
+@router.post("/agent-heartbeat")
+def agent_heartbeat(
+    data: dict = Body(default={}),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user_by_api_key),
+):
+    account_id = str(data.get("account_id") or "").strip() or None
+    account_name = str(data.get("account_name") or "").strip() or None
+    broker = str(data.get("broker") or "").strip() or None
+    server = str(data.get("server") or "").strip() or None
+    status = str(data.get("status") or "online").strip()[:80]
+
+    current_user.agent_last_seen_at = datetime.utcnow()
+    current_user.agent_account_id = account_id
+    current_user.agent_account_name = account_name
+    current_user.agent_broker = broker
+    current_user.agent_server = server
+    current_user.agent_status = status
+
+    db.commit()
+
+    return {
+        "message": "Agent heartbeat received",
+        "agent_connected": True,
+        "account_id": account_id,
+        "account_name": account_name,
+    }
 
 
 @router.get("/analytics/recommendations")

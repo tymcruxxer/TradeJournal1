@@ -16,11 +16,11 @@ from .config import (
     _get_app_home,
 )
 from .lock import SingleInstanceLock
-from .mt5_reader import fetch_closed_trades
+from .mt5_reader import fetch_closed_trades, get_account_info
 from .process import is_mt5_running
 from .startup import install_startup_task, startup_task_status, uninstall_startup_task
 from .state import SyncState
-from .uploader import upload_trades
+from .uploader import send_heartbeat, upload_trades
 
 
 LOGGER = logging.getLogger("tradejournal-sync-agent")
@@ -56,7 +56,15 @@ class SyncAgent:
             time.sleep(self.config.quick_sync_interval_seconds)
 
     def sync_once(self) -> dict:
-        if not is_mt5_running(self.config.mt5_process_names):
+        mt5_running = is_mt5_running(self.config.mt5_process_names)
+        account_info = get_account_info() if mt5_running else {
+            "connected": False,
+            "message": "MT5 terminal is not running",
+        }
+        heartbeat_status = "mt5_connected" if account_info.get("connected") else "waiting_for_mt5"
+        self._send_heartbeat(account_info, heartbeat_status)
+
+        if not mt5_running:
             LOGGER.info("MT5 terminal is not running; skipping sync")
             return {"mode": "skipped", "reason": "mt5_not_running"}
 
@@ -110,6 +118,12 @@ class SyncAgent:
             "uploaded": len(unsynced_trades),
             "backend": upload_result,
         }
+
+    def _send_heartbeat(self, account_info: dict | None = None, status: str = "online") -> None:
+        try:
+            send_heartbeat(self.config, account_info, status=status)
+        except Exception as exc:
+            LOGGER.warning("Agent heartbeat failed: %s", exc)
 
     def _resolve_state_path(self, state_file: str) -> Path:
         state_path = Path(state_file)

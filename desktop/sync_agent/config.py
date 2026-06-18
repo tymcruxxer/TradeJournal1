@@ -71,7 +71,7 @@ DEFAULT_CONFIG_PATH = _get_default_config_path()
 
 @dataclass
 class AgentConfig:
-    backend_url: str = "https://tradejournal11.onrender.com"
+    backend_url: str = "https://tradejournal1.onrender.com"
     api_key: str = ""
     account_id: str = ""
     account_name: str = ""

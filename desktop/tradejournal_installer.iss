@@ -9,8 +9,8 @@ AppId={{6F24D54C-E84B-4503-82E0-16A47E4F1447}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
-AppPublisherURL=https://tradejournal11.onrender.com
-AppSupportURL=https://tradejournal11.onrender.com
+AppPublisherURL=https://tradejournal1.onrender.com
+AppSupportURL=https://tradejournal1.onrender.com
 DefaultDirName={autopf}\TradeJournal Sync Agent
 DefaultGroupName=TradeJournal
 DisableProgramGroupPage=yes
@@ -37,3 +37,8 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: deskto
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName} Setup"; Parameters: "--setup"; Flags: postinstall skipifsilent
+
+[Messages]
+WelcomeLabel1=Welcome to TradeJournal Desktop Sync
+WelcomeLabel2=This setup installs the secure local companion app that connects MetaTrader 5 to your TradeJournal dashboard.
+FinishedLabel=TradeJournal Desktop Sync has been installed. Keep "Launch TradeJournal Sync Agent Setup" selected to enter your API key and start syncing.

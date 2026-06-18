@@ -15,7 +15,7 @@ import {
 import Layout from "./components/Layout";
 import { Button, EmptyState, LoadingState } from "./components/ui";
 import { WorkspaceProvider, useWorkspace } from "./context/WorkspaceContext";
-import type { AccountInfo, ApiKeyResponse, AuthUser, PaginatedTradesResponse } from "./types";
+import type { AccountInfo, AgentStatus, ApiKeyResponse, AuthUser, PaginatedTradesResponse } from "./types";
 
 function AppContent() {
   const { selectedAccount, setSelectedAccount } = useWorkspace();
@@ -24,6 +24,7 @@ function AppContent() {
   const [activePage, setActivePage] = useState("dashboard");
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [shellLoading, setShellLoading] = useState(true);
   const [shellError, setShellError] = useState("");
   const [authNotice, setAuthNotice] = useState("");
@@ -37,6 +38,7 @@ function AppContent() {
     setAccounts([]);
     setSelectedAccount("");
     setApiKey(null);
+    setAgentStatus(null);
     setShellError("");
   };
 
@@ -59,16 +61,18 @@ function AppContent() {
     setShellError("");
 
     try {
-      const [accountsRes, tradesRes, apiKeyRes] = await Promise.all([
+      const [accountsRes, tradesRes, apiKeyRes, agentStatusRes] = await Promise.all([
         api.get<AccountInfo[]>("/api/trades/accounts"),
         api.get<PaginatedTradesResponse>("/api/trades?limit=1"),
         api.get<ApiKeyResponse>("/api/auth/api-key"),
+        api.get<AgentStatus>("/api/trades/agent-status"),
       ]);
 
       const nextAccounts = accountsRes.data;
       setAccounts(nextAccounts);
       setTradeCount(tradesRes.data.total);
       setApiKey(apiKeyRes.data.api_key);
+      setAgentStatus(agentStatusRes.data);
 
       if (nextAccounts.length === 1) {
         setSelectedAccount(nextAccounts[0].account_id);
@@ -133,6 +137,7 @@ function AppContent() {
       setAccounts([]);
       setSelectedAccount("");
       setApiKey(null);
+      setAgentStatus(null);
       setShellError("");
       setAuthNotice("Your session expired. Sign in again to continue.");
     };
@@ -156,7 +161,9 @@ function AppContent() {
 
   const hasAccounts = accounts.length > 0;
   const hasTrades = tradeCount > 0;
-  const isOnboarding = !shellLoading && !hasAccounts && !hasTrades;
+  const agentConnected = Boolean(agentStatus?.agent_connected);
+  const workspaceConnected = Boolean(apiKey && (agentConnected || hasAccounts || hasTrades));
+  const isOnboarding = !shellLoading && !workspaceConnected;
 
   return (
     <Layout
@@ -193,6 +200,8 @@ function AppContent() {
                 hasTrades={hasTrades}
                 isShellLoading={shellLoading}
                 apiKey={apiKey}
+                agentConnected={agentConnected}
+                agentStatus={agentStatus}
                 onOpenSettings={() => setActivePage("settings")}
                 onRefreshWorkspace={() => loadShellState(selectedAccount)}
               />

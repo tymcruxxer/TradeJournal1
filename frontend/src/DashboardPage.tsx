@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, getApiErrorMessage, getDesktopAgentDownloadUrl } from "./api";
 import { useWorkspace } from "./context/WorkspaceContext";
-import type { Trade } from "./types";
+import type { AgentStatus, Trade } from "./types";
 import {
   Bar,
   BarChart,
@@ -31,6 +31,8 @@ type Props = {
   hasTrades: boolean;
   isShellLoading: boolean;
   apiKey: string | null;
+  agentConnected: boolean;
+  agentStatus: AgentStatus | null;
   onOpenSettings: () => void;
   onRefreshWorkspace: () => Promise<void>;
 };
@@ -41,6 +43,8 @@ export default function DashboardPage({
   hasTrades,
   isShellLoading,
   apiKey,
+  agentConnected,
+  agentStatus,
   onOpenSettings,
   onRefreshWorkspace,
 }: Props) {
@@ -217,7 +221,7 @@ export default function DashboardPage({
     return <LoadingState label="Preparing your workspace..." />;
   }
 
-  if (!hasAccounts && !hasTrades) {
+  if (!hasAccounts && !hasTrades && !agentConnected) {
     return (
       <div className="space-y-6">
         <PageHeader
@@ -342,7 +346,11 @@ export default function DashboardPage({
               <div>
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-slate-400">Agent readiness</p>
                 <p className="mt-2 text-sm text-slate-300">
-                  {apiKey ? "Desktop sync configured for secure uploads." : "Open Settings to provision your sync API key."}
+                  {agentConnected
+                    ? `Desktop agent connected${agentStatus?.account_name ? ` as ${agentStatus.account_name}` : ""}.`
+                    : apiKey
+                      ? "Desktop sync configured for secure uploads."
+                      : "Open Settings to provision your sync API key."}
                 </p>
               </div>
             </div>
@@ -354,7 +362,7 @@ export default function DashboardPage({
             {[
               ["Account-aware views", hasAccounts ? "Connected" : "Waiting", hasAccounts ? "success" : "warning"],
               ["Trade feed", hasTrades ? "Active" : "No history yet", hasTrades ? "success" : "warning"],
-              ["Desktop sync", apiKey ? "Key ready" : "Needs API key", apiKey ? "info" : "warning"],
+              ["Desktop sync", agentConnected ? "Connected" : apiKey ? "Key ready" : "Needs API key", agentConnected ? "success" : apiKey ? "info" : "warning"],
             ].map(([label, value, tone]) => (
               <div key={label} className="rounded-[22px] border border-white/8 bg-slate-950/30 p-4">
                 <div className="flex items-center justify-between gap-3">

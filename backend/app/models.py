@@ -14,6 +14,12 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     api_key = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    agent_last_seen_at = Column(DateTime, nullable=True)
+    agent_account_id = Column(String, nullable=True)
+    agent_account_name = Column(String, nullable=True)
+    agent_broker = Column(String, nullable=True)
+    agent_server = Column(String, nullable=True)
+    agent_status = Column(String, nullable=True)
 
     trades = relationship("Trade", back_populates="user")
 

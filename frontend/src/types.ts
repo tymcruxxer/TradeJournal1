@@ -45,3 +45,14 @@ export interface AuthUser {
 export interface ApiKeyResponse {
   api_key: string | null;
 }
+
+export interface AgentStatus {
+  api_key_configured: boolean;
+  agent_connected: boolean;
+  last_seen_at: string | null;
+  account_id: string | null;
+  account_name: string | null;
+  broker: string | null;
+  server: string | null;
+  status: string | null;
+}
