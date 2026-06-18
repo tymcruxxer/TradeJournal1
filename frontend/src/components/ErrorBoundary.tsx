@@ -18,17 +18,15 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("Unhandled UI error captured by boundary:", error, info.componentStack);
+    console.error(
+      "Unhandled UI error captured by boundary:",
+      error,
+      info.componentStack
+    );
   }
 
   handleReset = () => {
-    // Clear the error state locally first to let React components attempt to re-render naturally
     this.setState({ hasError: false, errorLog: "" });
-  };
-
-  handleHardReload = () => {
-    // This will ONLY run if you manually click the button yourself
-    window.location.reload();
   };
 
   render() {
@@ -42,43 +40,27 @@ export default class ErrorBoundary extends Component<Props, State> {
           <Panel>
             <div className="space-y-5 text-center">
               <StatusBadge tone="danger">Interface Paused</StatusBadge>
+
               <div>
                 <h1 className="text-2xl font-semibold tracking-[-0.03em] text-white">
                   TradeJournal is waiting for server response.
                 </h1>
+
                 <p className="mt-3 text-sm leading-6 text-slate-400">
-<<<<<<< HEAD
-                  Your session and trade data are safe. This usually happens if the backend cloud server is taking a moment to wake up from standby.
-=======
-                  Your session and trade data are protected. Try recovering the interface without leaving the page.
->>>>>>> f0273a5 (Fix onboarding refresh loop)
+                  Your session and trade data are protected. Try recovering the
+                  interface without leaving the page.
                 </p>
+
                 {this.state.errorLog && (
-                  <p className="mt-2 text-xs font-mono text-amber-300/70 bg-black/30 p-2 rounded max-w-full overflow-x-auto">
+                  <p className="mt-2 max-w-full overflow-x-auto rounded bg-black/30 p-2 font-mono text-xs text-amber-300/70">
                     Log: {this.state.errorLog}
                   </p>
                 )}
               </div>
+
               <div className="flex flex-wrap justify-center gap-3">
-                <Button
-                  variant="primary"
-<<<<<<< HEAD
-                  onClick={this.handleReset}
-                >
-                  Retry Interface
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={this.handleHardReload}
-                >
-                  Hard Reload Page
-=======
-                  onClick={() => {
-                    this.setState({ hasError: false });
-                  }}
-                >
+                <Button variant="primary" onClick={this.handleReset}>
                   Try again
->>>>>>> f0273a5 (Fix onboarding refresh loop)
                 </Button>
               </div>
             </div>
